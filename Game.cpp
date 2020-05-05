@@ -235,7 +235,7 @@ void Game::goingDown(sf::Time elapsedTime, std::shared_ptr<Entity> player) {
 	player->m_jumping = false;
 
 	if (grounded == false) {
-		movement.y += PlayerSpeed;
+		movement.y += 2 * PlayerSpeed;
 		player->m_sprite.move(movement * elapsedTime.asSeconds());
 	}
 }
@@ -254,20 +254,22 @@ void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed)
 
 	if (key == sf::Keyboard::Space)
 	{
-		for (std::shared_ptr<Entity> player : EntityManager::m_Entities) {
-			if (player->m_enabled == false)
-				continue;
+		if (isPressed == false) {
+			for (std::shared_ptr<Entity> player : EntityManager::m_Entities) {
+				if (player->m_enabled == false)
+					continue;
 
-			if (player->m_type != EntityType::player)
-				continue;
+				if (player->m_type != EntityType::player)
+					continue;
 
-			//printf("jump: %d", player->m_jumping);
+				//printf("jump: %d", player->m_jumping);
 
-			if (player->m_jumping == false) {
-				player->velocityY += 1200.f;
-				player->m_jumping = true;
+				if (player->m_jumping == false) {
+					player->velocityY += 1200.f;
+					player->m_jumping = true;
+				}
+				break;
 			}
-			break;
 		}
 	}
 }
