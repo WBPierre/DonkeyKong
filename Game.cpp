@@ -7,7 +7,7 @@ const float Game::PlayerSpeed = 100.f;
 const sf::Time Game::TimePerFrame = sf::seconds(1.f / 60.f);
 
 Game::Game()
-	: mWindow(sf::VideoMode(840, 600), "Donkey Kong 1981", sf::Style::Close)
+	: mWindow(sf::VideoMode(840, 600), "Donkey Kong - 1981 Remastered", sf::Style::Close)
 	, mTexture()
 	, mPlayer()
 	, mFont()
@@ -38,6 +38,7 @@ Game::Game()
 			se->m_type = EntityType::block;
 			se->m_size = _TextureBlock.getSize();
 			se->m_position = _Block[i][j].getPosition();
+			printf("Block (%.0f,%.0f) : %d\n", se->m_position.x, se->m_position.y, se->m_size.y);
 			EntityManager::m_Entities.push_back(se);
 		}
 	}
@@ -55,6 +56,7 @@ Game::Game()
 		se->m_sprite = _Echelle[i];
 		se->m_type = EntityType::echelle;
 		se->m_size = _TextureEchelle.getSize();
+
 		se->m_position = _Echelle[i].getPosition();
 		EntityManager::m_Entities.push_back(se);
 	}
@@ -133,36 +135,30 @@ void Game::processEvents()
 
 void Game::update(sf::Time elapsedTime)
 {
+
+	std::shared_ptr<Entity> player = EntityManager::GetPlayer();
 	sf::Vector2f movement(0.f, 0.f);
-	if (mIsMovingUp)
-		movement.y -= PlayerSpeed;
-	if (mIsMovingDown)
-		movement.y += PlayerSpeed;
-	if (mIsMovingLeft)
-		movement.x -= PlayerSpeed;
-	if (mIsMovingRight)
-		movement.x += PlayerSpeed;
+	if (mIsMovingUp) movement.y -= PlayerSpeed;
+	if (mIsMovingDown) movement.y += PlayerSpeed;
+	if (mIsMovingLeft) movement.x -= PlayerSpeed;
+	if (mIsMovingRight) movement.x += PlayerSpeed;
 
-	for (std::shared_ptr<Entity> entity : EntityManager::m_Entities)
-	{
-		if (entity->m_enabled == false)
-		{
-			continue;
-		}
-
-		if (entity->m_type != EntityType::player)
-		{
-			continue;
-		}
-		
-		if (entity->velocityY > 0) {
+	if (player->m_enabled != false) {
+		/*
+		if (player->velocityY > 0) {
 			movement.y -= 1.5 * PlayerSpeed;
-			entity->velocityY -= 1.5 * PlayerSpeed;
+			player->velocityY -= 1.5 * PlayerSpeed;
+		} else {
+			goingDown(elapsedTime, player);
 		}
-		else
-			goingDown(elapsedTime, entity);
-
-		entity->m_sprite.move(movement * elapsedTime.asSeconds());
+		*/
+		if (mIsMovingDown && !canGoDown(elapsedTime, player)) {
+			movement.y -= PlayerSpeed;
+		}
+		if (mIsMovingUp && !canGoUp(elapsedTime, player)) {
+			movement.y += PlayerSpeed;
+		}
+		player->m_sprite.move(movement * elapsedTime.asSeconds());
 	}
 }
 
@@ -240,36 +236,68 @@ void Game::goingDown(sf::Time elapsedTime, std::shared_ptr<Entity> player) {
 	}
 }
 
+bool Game::canGoDown(sf::Time elapsedTime, std::shared_ptr<Entity> player) {
+	sf::FloatRect boundPlayer = player->m_sprite.getGlobalBounds();
+
+	for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
+		if (block->m_enabled == false) continue;
+		if (block->m_type == EntityType::block) {
+			sf::FloatRect boundBlock = block->m_sprite.getGlobalBounds();
+			if (boundPlayer.intersects(boundBlock) == true) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+bool Game::canGoUp(sf::Time elapsedTime, std::shared_ptr<Entity> player) {
+	sf::FloatRect boundPlayer = player->m_sprite.getGlobalBounds();
+
+	for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
+		if (block->m_enabled == false) continue;
+		if (block->m_type == EntityType::echelle) {
+			sf::FloatRect boundBlock = block->m_sprite.getGlobalBounds();
+			if (boundPlayer.intersects(boundBlock) == true) {
+				return true;
+			}
+		}
+		if (block->m_type == EntityType::block) {
+			sf::FloatRect boundBlock = block->m_sprite.getGlobalBounds();
+			if (boundPlayer.intersects(boundBlock) == true) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed)
 {
+	std::shared_ptr<Entity> player = EntityManager::GetPlayer();
+
 	if (key == sf::Keyboard::Up) {
 		mIsMovingUp = isPressed;
-	}
-	else if (key == sf::Keyboard::Down)
+	} else if (key == sf::Keyboard::Down) {
 		mIsMovingDown = isPressed;
-	else if (key == sf::Keyboard::Left)
+				
+	} else if (key == sf::Keyboard::Left) {
 		mIsMovingLeft = isPressed;
-	else if (key == sf::Keyboard::Right)
+	} else if (key == sf::Keyboard::Right) {
 		mIsMovingRight = isPressed;
+	}
 
 	if (key == sf::Keyboard::Space)
 	{
 		if (isPressed == false) {
-			for (std::shared_ptr<Entity> player : EntityManager::m_Entities) {
-				if (player->m_enabled == false)
-					continue;
-
-				if (player->m_type != EntityType::player)
-					continue;
-
-				//printf("jump: %d", player->m_jumping);
-
+			if (player->m_enabled != false) {
 				if (player->m_jumping == false) {
 					player->velocityY += 1200.f;
 					player->m_jumping = true;
 				}
-				break;
 			}
+
+			//printf("jump: %d", player->m_jumping);			
 		}
 	}
 }

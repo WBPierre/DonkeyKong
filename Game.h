@@ -21,6 +21,8 @@ private:
 
 	void updateStatistics(sf::Time elapsedTime);
 	void goingDown(sf::Time elapsedTime, std::shared_ptr<Entity> player);
+	bool canGoDown(sf::Time elapsedTime, std::shared_ptr<Entity> player);
+	bool canGoUp(sf::Time elapsedTime, std::shared_ptr<Entity> player);
 	void handlePlayerInput(sf::Keyboard::Key key, bool isPressed);
 
 private:
