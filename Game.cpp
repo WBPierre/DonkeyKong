@@ -154,6 +154,13 @@ void Game::update(sf::Time elapsedTime)
 		{
 			continue;
 		}
+		
+		if (entity->velocityY > 0) {
+			movement.y -= 1.5 * PlayerSpeed;
+			entity->velocityY -= 1.5 * PlayerSpeed;
+		}
+		else
+			goingDown(elapsedTime, entity);
 
 		entity->m_sprite.move(movement * elapsedTime.asSeconds());
 	}
@@ -202,10 +209,42 @@ void Game::updateStatistics(sf::Time elapsedTime)
 	}
 }
 
+void Game::goingDown(sf::Time elapsedTime, std::shared_ptr<Entity> player) {
+	bool grounded = false;
+	sf::Vector2f movement(0.f, 0.f);
+
+	sf::FloatRect boundPlayer = player->m_sprite.getGlobalBounds();
+
+	for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
+		if (block->m_enabled == false) {
+			continue;
+		}
+
+		if (block->m_type != EntityType::block) {
+			continue;
+		}
+
+		sf::FloatRect boundBlock = block->m_sprite.getGlobalBounds();
+
+		if (boundPlayer.intersects(boundBlock) == true) {
+			grounded = true;
+			break;
+		}
+	}
+	
+	player->m_jumping = false;
+
+	if (grounded == false) {
+		movement.y += PlayerSpeed;
+		player->m_sprite.move(movement * elapsedTime.asSeconds());
+	}
+}
+
 void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed)
 {
-	if (key == sf::Keyboard::Up)
+	if (key == sf::Keyboard::Up) {
 		mIsMovingUp = isPressed;
+	}
 	else if (key == sf::Keyboard::Down)
 		mIsMovingDown = isPressed;
 	else if (key == sf::Keyboard::Left)
@@ -215,5 +254,20 @@ void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed)
 
 	if (key == sf::Keyboard::Space)
 	{
+		for (std::shared_ptr<Entity> player : EntityManager::m_Entities) {
+			if (player->m_enabled == false)
+				continue;
+
+			if (player->m_type != EntityType::player)
+				continue;
+
+			//printf("jump: %d", player->m_jumping);
+
+			if (player->m_jumping == false) {
+				player->velocityY += 1200.f;
+				player->m_jumping = true;
+			}
+			break;
+		}
 	}
 }

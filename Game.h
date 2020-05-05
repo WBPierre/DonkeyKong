@@ -5,6 +5,8 @@
 #define BLOCK_COUNT_Y 5
 #define BLOCK_SPACE 110.f
 
+#include "EntityManager.h"
+
 class Game
 {
 public:
@@ -18,6 +20,7 @@ private:
 	void render();
 
 	void updateStatistics(sf::Time elapsedTime);
+	void goingDown(sf::Time elapsedTime, std::shared_ptr<Entity> player);
 	void handlePlayerInput(sf::Keyboard::Key key, bool isPressed);
 
 private:

@@ -23,5 +23,9 @@ public:
 	// Enemy only
 	bool m_bLeftToRight = true;
 	int m_times = 0;
+
+	// Player only
+	bool m_jumping = false;
+	float velocityY = 0.f;
 };
 
