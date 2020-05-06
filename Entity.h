@@ -27,5 +27,8 @@ public:
 	// Player only
 	bool m_jumping = false;
 	float velocityY = 0.f;
+	bool m_climbing = false;
+	bool m_lastMove = true;
+	int m_current_texture = 0;
 };
 

@@ -24,6 +24,7 @@ private:
 	bool canGoDown(sf::Time elapsedTime, std::shared_ptr<Entity> player);
 	bool canGoUp(sf::Time elapsedTime, std::shared_ptr<Entity> player);
 	void handlePlayerInput(sf::Keyboard::Key key, bool isPressed);
+	void updateTextures(sf::Time elapsedTime);
 
 private:
 	static const float		PlayerSpeed;

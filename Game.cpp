@@ -2,6 +2,7 @@
 #include "StringHelpers.h"
 #include "Game.h"
 #include "EntityManager.h"
+#include <chrono>
 
 const float Game::PlayerSpeed = 100.f;
 const sf::Time Game::TimePerFrame = sf::seconds(1.f / 60.f);
@@ -38,7 +39,6 @@ Game::Game()
 			se->m_type = EntityType::block;
 			se->m_size = _TextureBlock.getSize();
 			se->m_position = _Block[i][j].getPosition();
-			printf("Block (%.0f,%.0f) : %d\n", se->m_position.x, se->m_position.y, se->m_size.y);
 			EntityManager::m_Entities.push_back(se);
 		}
 	}
@@ -63,8 +63,9 @@ Game::Game()
 
 	// Draw Mario
 
-	mTexture.loadFromFile("Media/Textures/Mario_small_transparent.png"); // Mario_small.png");
+	mTexture.loadFromFile("Media/Textures/marioRight.png"); // Mario_small.png");
 	_sizeMario = mTexture.getSize();
+	mTexture.setSmooth(true);
 	mPlayer.setTexture(mTexture);
 	sf::Vector2f posMario;
 	posMario.x = 100.f + 70.f;
@@ -158,8 +159,31 @@ void Game::update(sf::Time elapsedTime)
 		if (mIsMovingUp && !canGoUp(elapsedTime, player)) {
 			movement.y += PlayerSpeed;
 		}
+		if (mIsMovingLeft && player->m_climbing) {
+			movement.x += PlayerSpeed;
+		}
+		if (mIsMovingRight && player->m_climbing) {
+			movement.x -= PlayerSpeed;
+		}
+
+		updateTextures(elapsedTime);
+
 		player->m_sprite.move(movement * elapsedTime.asSeconds());
 	}
+}
+
+void Game::updateTextures(sf::Time elapsedTime) {
+	std::shared_ptr<Entity> player = EntityManager::GetPlayer();
+	if (mIsMovingLeft) {
+		mTexture.loadFromFile("Media/Textures/marioLeft.png");
+	}
+	if (mIsMovingRight) {
+			mTexture.loadFromFile("Media/Textures/marioRight.png");
+	}
+	if (mIsMovingUp) {
+		mTexture.loadFromFile("Media/Textures/marioClimb1.png");
+	}
+	
 }
 
 void Game::render()
@@ -238,12 +262,11 @@ void Game::goingDown(sf::Time elapsedTime, std::shared_ptr<Entity> player) {
 
 bool Game::canGoDown(sf::Time elapsedTime, std::shared_ptr<Entity> player) {
 	sf::FloatRect boundPlayer = player->m_sprite.getGlobalBounds();
-
 	for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
 		if (block->m_enabled == false) continue;
 		if (block->m_type == EntityType::block) {
 			sf::FloatRect boundBlock = block->m_sprite.getGlobalBounds();
-			if (boundPlayer.intersects(boundBlock) == true) {
+			if (boundPlayer.intersects(boundBlock) == true && (boundPlayer.top < boundBlock.top)) {
 				return false;
 			}
 		}
@@ -253,23 +276,32 @@ bool Game::canGoDown(sf::Time elapsedTime, std::shared_ptr<Entity> player) {
 
 bool Game::canGoUp(sf::Time elapsedTime, std::shared_ptr<Entity> player) {
 	sf::FloatRect boundPlayer = player->m_sprite.getGlobalBounds();
-
+	bool shouldGoUp = false;
 	for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
 		if (block->m_enabled == false) continue;
 		if (block->m_type == EntityType::echelle) {
 			sf::FloatRect boundBlock = block->m_sprite.getGlobalBounds();
 			if (boundPlayer.intersects(boundBlock) == true) {
-				return true;
+				player->m_climbing = true;
+				shouldGoUp = true;
 			}
 		}
 		if (block->m_type == EntityType::block) {
 			sf::FloatRect boundBlock = block->m_sprite.getGlobalBounds();
 			if (boundPlayer.intersects(boundBlock) == true) {
-				return true;
+				shouldGoUp = true;
 			}
 		}
 	}
-	return false;
+	if (shouldGoUp) {
+		player->m_climbing = true;
+		return true;
+	}
+	else {
+		player->m_climbing = false;
+		return false;
+	}
+	
 }
 
 void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed)
