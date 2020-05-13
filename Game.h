@@ -20,11 +20,14 @@ private:
 	void render();
 
 	void updateStatistics(sf::Time elapsedTime);
+	void gameText(sf::Time startingTime);
 	void goingDown(sf::Time elapsedTime, std::shared_ptr<Entity> player);
 	bool canGoDown(sf::Time elapsedTime, std::shared_ptr<Entity> player);
 	bool canGoUp(sf::Time elapsedTime, std::shared_ptr<Entity> player);
 	void handlePlayerInput(sf::Keyboard::Key key, bool isPressed);
 	void updateTextures(sf::Time elapsedTime);
+	void checkForPersonalRecord();
+	void checkForRecordFile();
 
 private:
 	static const float		PlayerSpeed;
@@ -35,6 +38,9 @@ private:
 	sf::Sprite	mPlayer;
 	sf::Font	mFont;
 	sf::Text	mStatisticsText;
+	sf::Text	mGameText;
+	sf::Text	mGameTime;
+	sf::Text	mGameRecord;
 	sf::Time	mStatisticsUpdateTime;
 
 	std::size_t	mStatisticsNumFrames;

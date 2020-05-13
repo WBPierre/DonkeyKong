@@ -2,7 +2,9 @@
 #include "StringHelpers.h"
 #include "Game.h"
 #include "EntityManager.h"
+#include <iostream>
 #include <chrono>
+#include <fstream>
 
 const float Game::PlayerSpeed = 100.f;
 const sf::Time Game::TimePerFrame = sf::seconds(1.f / 60.f);
@@ -15,6 +17,8 @@ Game::Game()
 	, mStatisticsText()
 	, mStatisticsUpdateTime()
 	, mStatisticsNumFrames(0)
+	, mGameText()
+	, mGameTime()
 	, mIsMovingUp(false)
 	, mIsMovingDown(false)
 	, mIsMovingRight(false)
@@ -88,13 +92,27 @@ Game::Game()
 	mStatisticsText.setPosition(5.f, 5.f);
 	mStatisticsText.setCharacterSize(10);
 
-	
+	mGameText.setString("Dunkey Kong 1981 - Remastered");
+	mGameText.setFont(mFont);
+	mGameText.setPosition(300.f, 20.f);
+	mGameText.setCharacterSize(24);
+
+	mGameTime.setFont(mFont);
+	mGameTime.setPosition(5.f, 120.f);
+	mGameTime.setCharacterSize(18);
+
+	mGameRecord.setFont(mFont);
+	mGameRecord.setPosition(5.f, 140.f);
+	mGameRecord.setCharacterSize(12);
 }
 
 void Game::run()
 {
 	sf::Clock clock;
+	sf::Clock inGameClock;
 	sf::Time timeSinceLastUpdate = sf::Time::Zero;
+	sf::Time startingTime = inGameClock.getElapsedTime();
+	checkForPersonalRecord();
 	while (mWindow.isOpen())
 	{
 		sf::Time elapsedTime = clock.restart();
@@ -106,10 +124,66 @@ void Game::run()
 			processEvents();
 			update(TimePerFrame);
 		}
-
+		startingTime = inGameClock.getElapsedTime();
+		gameText(startingTime);
 		updateStatistics(elapsedTime);
 		render();
 	}
+}
+
+void Game::gameText(sf::Time startingTime) {
+	if (startingTime.asSeconds() < 60) {
+		if (startingTime.asSeconds() > 10) {
+			mGameTime.setString("Time : " + toString(startingTime.asSeconds()).substr(0, 5));
+		}
+		else {
+			mGameTime.setString("Time : " + toString(startingTime.asSeconds()).substr(0, 4));
+		}
+		
+	}
+	else {
+		int min = startingTime.asSeconds() / 60;
+		float seconds = fmod(startingTime.asSeconds(), 60);
+		if (seconds > 10) {
+			mGameTime.setString("Time : " + toString(min) + "'" + toString(seconds).substr(0,5));
+		}
+		else {
+			mGameTime.setString("Time : " + toString(min) + "'" + toString(seconds).substr(0, 4));
+		}
+		
+	}
+	
+}
+
+void Game::checkForRecordFile() {
+	std::fstream recordFile;
+	recordFile.open("record.txt", std::fstream::in | std::fstream::out);
+	if (!recordFile) {
+		recordFile.open("record.txt", std::fstream::in | std::fstream::out | std::fstream::trunc);
+		recordFile << "record=null";
+		recordFile.close();
+	}
+	else {
+		recordFile.close();
+	}
+}
+
+void Game::checkForPersonalRecord() {
+	checkForRecordFile();
+	std::fstream recordFile;
+	recordFile.open("record.txt", std::fstream::in | std::fstream::out | std::fstream::app);
+	std::string line;
+	std::getline(recordFile, line);
+	line = line.substr(7);
+	std::cout << line;
+	if (line == "null") {
+		mGameRecord.setString("No record");
+	}
+	else {
+		int lastRecord = std::stoi(line);
+		mGameRecord.setString("Personal record : " + toString(lastRecord/60) + "'" + toString(lastRecord%60));
+	}
+	recordFile.close();
 }
 
 void Game::processEvents()
@@ -201,6 +275,9 @@ void Game::render()
 	}
 
 	mWindow.draw(mStatisticsText);
+	mWindow.draw(mGameText);
+	mWindow.draw(mGameTime);
+	mWindow.draw(mGameRecord);
 	mWindow.display();
 }
 
