@@ -31,7 +31,6 @@ private:
 	void updateTextures(sf::Time elapsedTime);
 	void animateBanana();
 	void animateEnemies();
-	void isJumping();
 	bool endOfGame();
 	void shoot();
 	void handleLife();

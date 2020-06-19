@@ -33,7 +33,6 @@ public:
 	bool m_jumping = false;
 	bool complete_jump = false;
 	float initial_y;
-	float velocityY = 0.f;
 	bool m_climbing = false;
 	bool m_lastMove = true;
 	int m_current_texture = 0;
