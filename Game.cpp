@@ -14,15 +14,25 @@ Game::Game()
 	, mTexture()
 	, mPlayer()
 	, mFont()
+	, marioFont()
+	, mPeach()
+	, mDK()
+	, mBanana()
 	, mStatisticsText()
 	, mStatisticsUpdateTime()
 	, mStatisticsNumFrames(0)
 	, mGameText()
 	, mGameTime()
+	, mGameEnd()
+	, mGameEndSub()
+	, mGameCommand()
 	, mIsMovingUp(false)
 	, mIsMovingDown(false)
 	, mIsMovingRight(false)
 	, mIsMovingLeft(false)
+	, mIsShooting(false)
+	, lookingAt(true)
+	, shotFired(false)
 {
 	mWindow.setFramerateLimit(160);
 
@@ -49,7 +59,7 @@ Game::Game()
 
 	// Draw Echelles
 
-	_TextureEchelle.loadFromFile("Media/Textures/Echelle.png");
+	_TextureEchelle.loadFromFile("Media/Textures/Echelle_resized.png");
 
 	for (int i = 0; i < ECHELLE_COUNT; i++)
 	{
@@ -64,6 +74,76 @@ Game::Game()
 		se->m_position = _Echelle[i].getPosition();
 		EntityManager::m_Entities.push_back(se);
 	}
+
+	// Draw Enemies
+
+	_TextureEnemy.loadFromFile("Media/Textures/enemy.png");
+	for (int i = 0; i < ENEMY_COUNT; i++) {
+		_Enemies[i].setTexture(_TextureEnemy);
+		_Enemies[i].setPosition(150.f + 150.f *(i + 1), 0.f + BLOCK_SPACE * (i + 1)+ 25 + _sizeBlock.y);
+		std::shared_ptr<Entity> se = std::make_shared<Entity>();
+		se->m_sprite = _Enemies[i];
+		se->m_type = EntityType::enemy;
+		se->m_size = _TextureEnemy.getSize();
+
+		se->m_position = _Enemies[i].getPosition();
+		EntityManager::m_Entities.push_back(se);
+	}
+
+	
+
+	// Draw hearts
+
+	_TextureHeart.loadFromFile("Media/Textures/heart.png");
+	for (int i = 0; i < HEART_COUNT; i++) {
+		_Hearts[i].setTexture(_TextureHeart);
+		_Hearts[i].setPosition(5.f + (i * 30.f), 160.f);
+		std::shared_ptr<Entity> se = std::make_shared<Entity>();
+		se->m_sprite = _Hearts[i];
+		se->m_type = EntityType::heart;
+		se->m_size = _TextureHeart.getSize();
+		se->m_position = _Hearts[i].getPosition();
+		EntityManager::m_Entities.push_back(se);
+	}
+
+	// Draw DK
+
+	_TextureDK.loadFromFile("Media/Textures/dkjr.png");
+	_sizeDK = _TextureDK.getSize();
+	_TextureDK.setSmooth(true);
+	mDK.setTexture(_TextureDK);
+	sf::Vector2f posDK;
+	posDK.x = 600.f;
+	posDK.y = BLOCK_SPACE - _sizeDK.y;
+
+	mDK.setPosition(posDK);
+
+	std::shared_ptr<Entity> dk = std::make_shared<Entity>();
+	dk->m_sprite = mDK;
+	dk->m_type = EntityType::DK;
+	dk->m_size = _TextureDK.getSize();
+	dk->m_position = mDK.getPosition();
+	EntityManager::m_Entities.push_back(dk);
+
+	// Draw Peach
+	
+	_TexturePeach.loadFromFile("Media/Textures/peach.png");
+	_sizePeach = _TexturePeach.getSize();
+	_TexturePeach.setSmooth(true);
+	mPeach.setTexture(_TexturePeach);
+	sf::Vector2f posPeach;
+	posPeach.x = 680.f;
+	posPeach.y = BLOCK_SPACE - _sizePeach.y;
+
+	mPeach.setPosition(posPeach);
+
+	std::shared_ptr<Entity> peach = std::make_shared<Entity>();
+	peach->m_sprite = mPeach;
+	peach->m_type = EntityType::peach;
+	peach->m_size = _TexturePeach.getSize();
+	peach->m_position = mPeach.getPosition();
+	EntityManager::m_Entities.push_back(peach);
+	
 
 	// Draw Mario
 
@@ -84,6 +164,22 @@ Game::Game()
 	player->m_position = mPlayer.getPosition();
 	EntityManager::m_Entities.push_back(player);
 
+	// Draw banana
+
+	_TextureBanana.loadFromFile("Media/Textures/banana.png");
+	_sizeBanana = _TextureBanana.getSize();
+	_TextureBanana.setSmooth(true);
+	mBanana.setTexture(_TextureBanana);
+	mBanana.setPosition(player->m_sprite.getPosition());
+	std::shared_ptr<Entity> banana = std::make_shared<Entity>();
+	banana->m_sprite = mBanana;
+	banana->m_type = EntityType::banana;
+	banana->m_size = _TextureBanana.getSize();
+	banana->m_position = mBanana.getPosition();
+	banana->m_enabled = false;
+	EntityManager::m_Entities.push_back(banana);
+
+
 	// Draw Statistic Font 
 
 	mFont.loadFromFile("Media/Sansation.ttf");
@@ -92,18 +188,36 @@ Game::Game()
 	mStatisticsText.setPosition(5.f, 5.f);
 	mStatisticsText.setCharacterSize(10);
 
+	marioFont.loadFromFile("Media/SuperMarioBros.ttf");
 	mGameText.setString("Dunkey Kong 1981 - Remastered");
-	mGameText.setFont(mFont);
-	mGameText.setPosition(300.f, 20.f);
+	mGameText.setFont(marioFont);
+	mGameText.setPosition(250.f, 20.f);
 	mGameText.setCharacterSize(24);
 
-	mGameTime.setFont(mFont);
+
+	mGameTime.setFont(marioFont);
 	mGameTime.setPosition(5.f, 120.f);
 	mGameTime.setCharacterSize(18);
 
-	mGameRecord.setFont(mFont);
+	mGameRecord.setFont(marioFont);
 	mGameRecord.setPosition(5.f, 140.f);
 	mGameRecord.setCharacterSize(12);
+
+	mGameCommand.setFont(marioFont);
+	mGameCommand.setPosition(5.f, 200.f);
+	mGameCommand.setCharacterSize(14);
+	mGameCommand.setString("Press E to fire");
+	
+	mGameEnd.setFont(marioFont);
+	mGameEnd.setPosition(400.f, 250.f);
+	mGameEnd.setCharacterSize(32);
+	mGameEnd.setString("You won !");
+
+	mGameEndSub.setFont(marioFont);
+	mGameEndSub.setPosition(375.f, 300.f);
+	mGameEndSub.setCharacterSize(24);
+	mGameEndSub.setString("You can now leave");
+
 }
 
 void Game::run()
@@ -112,6 +226,8 @@ void Game::run()
 	sf::Clock inGameClock;
 	sf::Time timeSinceLastUpdate = sf::Time::Zero;
 	sf::Time startingTime = inGameClock.getElapsedTime();
+	gameIsEnded = false;
+	life = HEART_COUNT;
 	checkForPersonalRecord();
 	while (mWindow.isOpen())
 	{
@@ -120,39 +236,95 @@ void Game::run()
 		while (timeSinceLastUpdate > TimePerFrame)
 		{
 			timeSinceLastUpdate -= TimePerFrame;
-
 			processEvents();
-			update(TimePerFrame);
+			if (!gameIsEnded) {
+				update(TimePerFrame);
+				animateEnemies();
+				animateBanana();
+			}
 		}
-		startingTime = inGameClock.getElapsedTime();
+		if (!gameIsEnded) {
+			startingTime = inGameClock.getElapsedTime();
+		}
 		gameText(startingTime);
 		updateStatistics(elapsedTime);
 		render();
 	}
 }
 
+
+
+void Game::animateEnemies() {
+	sf::Vector2f movement(-2.f, 0.f);
+	for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
+		if (block->m_enabled == false) {
+			continue;
+		}
+		if (block->m_type == EntityType::enemy) {
+			block->m_sprite.move(movement);
+			if (block->m_sprite.getPosition().x == 170.f) {
+				block->m_sprite.setPosition(700.f, block->m_sprite.getPosition().y);
+			}
+		}
+	}
+}
+
+bool Game::endOfGame() {
+	std::shared_ptr<Entity> player = EntityManager::GetPlayer();
+	sf::FloatRect boundPlayer = player->m_sprite.getGlobalBounds();
+
+	for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
+		if (block->m_enabled == false) {
+			continue;
+		}
+		if (block->m_type == EntityType::peach) {
+			sf::FloatRect boundPeach = block->m_sprite.getGlobalBounds();
+			if (boundPlayer.intersects(boundPeach) == true) {
+				gameIsEnded = true;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void Game::gameText(sf::Time startingTime) {
-	if (startingTime.asSeconds() < 60) {
-		if (startingTime.asSeconds() > 10) {
-			mGameTime.setString("Time : " + toString(startingTime.asSeconds()).substr(0, 5));
+	if (Game::endOfGame() == false) {
+		if (startingTime.asSeconds() < 60) {
+			if (startingTime.asSeconds() > 10) {
+				mGameTime.setString("Time : " + toString(startingTime.asSeconds()).substr(0, 5));
+			}
+			else {
+				mGameTime.setString("Time : " + toString(startingTime.asSeconds()).substr(0, 4));
+			}
+
 		}
 		else {
-			mGameTime.setString("Time : " + toString(startingTime.asSeconds()).substr(0, 4));
+			int min = startingTime.asSeconds() / 60;
+			float seconds = fmod(startingTime.asSeconds(), 60);
+			if (seconds > 10) {
+				mGameTime.setString("Time : " + toString(min) + "'" + toString(seconds).substr(0, 5));
+			}
+			else {
+				mGameTime.setString("Time : " + toString(min) + "'" + toString(seconds).substr(0, 4));
+			}
+
 		}
-		
-	}
-	else {
-		int min = startingTime.asSeconds() / 60;
-		float seconds = fmod(startingTime.asSeconds(), 60);
-		if (seconds > 10) {
-			mGameTime.setString("Time : " + toString(min) + "'" + toString(seconds).substr(0,5));
+	} else {
+		int timer = startingTime.asSeconds();
+		if (record == -1 || record > timer) {
+			std::fstream recordFile;
+			recordFile.open("record.txt", std::fstream::in | std::fstream::out | std::fstream::trunc);
+			recordFile << "record=" + toString(timer);
+			recordFile.close();
+			mGameEnd.setString("You won ! New best record !");
 		}
 		else {
-			mGameTime.setString("Time : " + toString(min) + "'" + toString(seconds).substr(0, 4));
+			mGameEnd.setString("You won !");
 		}
 		
+		mGameEndSub.setString("You can now leave");
 	}
-	
 }
 
 void Game::checkForRecordFile() {
@@ -161,11 +333,8 @@ void Game::checkForRecordFile() {
 	if (!recordFile) {
 		recordFile.open("record.txt", std::fstream::in | std::fstream::out | std::fstream::trunc);
 		recordFile << "record=null";
-		recordFile.close();
 	}
-	else {
-		recordFile.close();
-	}
+	recordFile.close();
 }
 
 void Game::checkForPersonalRecord() {
@@ -175,12 +344,14 @@ void Game::checkForPersonalRecord() {
 	std::string line;
 	std::getline(recordFile, line);
 	line = line.substr(7);
-	std::cout << line;
 	if (line == "null") {
 		mGameRecord.setString("No record");
+		record = - 1;
 	}
 	else {
 		int lastRecord = std::stoi(line);
+		record = lastRecord;
+		std::cout << lastRecord;
 		mGameRecord.setString("Personal record : " + toString(lastRecord/60) + "'" + toString(lastRecord%60));
 	}
 	recordFile.close();
@@ -208,6 +379,16 @@ void Game::processEvents()
 	}
 }
 
+void Game::handleLife() {
+	for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
+		if (block->m_enabled == false) continue;
+		if (block->m_type == EntityType::heart) {
+			block->m_enabled = false;
+			break;
+		}
+	}
+}
+
 void Game::update(sf::Time elapsedTime)
 {
 
@@ -217,16 +398,27 @@ void Game::update(sf::Time elapsedTime)
 	if (mIsMovingDown) movement.y += PlayerSpeed;
 	if (mIsMovingLeft) movement.x -= PlayerSpeed;
 	if (mIsMovingRight) movement.x += PlayerSpeed;
+	if (mIsShooting) shoot();
 
 	if (player->m_enabled != false) {
-		/*
-		if (player->velocityY > 0) {
-			movement.y -= 1.5 * PlayerSpeed;
-			player->velocityY -= 1.5 * PlayerSpeed;
-		} else {
-			goingDown(elapsedTime, player);
+		if (player->m_jumping) {
+			if (player->m_sprite.getPosition().y > player->initial_y - MAX_JUMP) {
+				movement.y -= 1.5 * PlayerSpeed;
+			}
+			else {
+				player->complete_jump = true;
+				player->m_jumping = false;
+			}	
 		}
-		*/
+		if (player->complete_jump) {
+			if (player->m_sprite.getPosition().y < player->initial_y) {
+				movement.y += 1.5 * PlayerSpeed;
+			}
+			else {
+				player->complete_jump = false;
+			}
+		}
+		
 		if (mIsMovingDown && !canGoDown(elapsedTime, player)) {
 			movement.y -= PlayerSpeed;
 		}
@@ -243,41 +435,117 @@ void Game::update(sf::Time elapsedTime)
 		updateTextures(elapsedTime);
 
 		player->m_sprite.move(movement * elapsedTime.asSeconds());
+
+
+		// Enemy collision
+		sf::FloatRect boundPlayer = player->m_sprite.getGlobalBounds();
+
+		for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
+			if (block->m_enabled == false) {
+				continue;
+			}
+			if (block->m_type == EntityType::enemy){
+				sf::FloatRect boundEnemy = block->m_sprite.getGlobalBounds();
+				if (boundPlayer.intersects(boundEnemy) == true) {
+					player->m_sprite.setPosition(170.f, BLOCK_SPACE * 5 - _sizeMario.y);
+					life--;
+					Game::handleLife();
+				}
+			}
+		}
 	}
+}
+
+void Game::animateBanana() {
+	sf::Vector2f movement;
+	movement.y = 0.f;
+	if (lookingAt) {
+		movement.x = 3.f;
+	}
+	else {
+		movement.x = -3.f;
+	}
+	
+	for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
+		if (block->m_type == EntityType::banana && block->m_enabled) {
+			if (block->m_sprite.getPosition().x <= (bananaStart.x+ 150.f) ) {
+				block->m_sprite.move(movement);
+				std::shared_ptr<Entity> player = EntityManager::GetPlayer();
+				sf::FloatRect boundBanana = block->m_sprite.getGlobalBounds();
+				for (std::shared_ptr<Entity> enemy : EntityManager::m_Entities) {
+					if (enemy->m_enabled && enemy->m_type == EntityType::DK) {
+						sf::FloatRect boundEnemy = enemy->m_sprite.getGlobalBounds();
+						if (boundBanana.intersects(boundEnemy) == true) {
+							enemy->m_enabled = false;
+							block->m_enabled = false;
+							shotFired = false;
+						}
+					}
+				}
+			} else {
+				block->m_enabled = false;
+				shotFired = false;
+			}
+		}
+	}
+}
+
+void Game::shoot() {
+	if (!shotFired) {
+		std::shared_ptr<Entity> player = EntityManager::GetPlayer();
+		if (player->m_climbing == false) {
+			for (std::shared_ptr<Entity> block : EntityManager::m_Entities) {
+				if (block->m_type == EntityType::banana) {
+					block->m_enabled = true;
+					block->m_sprite.setPosition(player->m_sprite.getPosition().x + 40.f, player->m_sprite.getPosition().y);
+					bananaStart.x = player->m_sprite.getPosition().x + 40.f;
+					bananaStart.y = player->m_sprite.getPosition().y;
+					shotFired = true;
+				}
+			}
+		}
+	}
+	mIsShooting = false;
 }
 
 void Game::updateTextures(sf::Time elapsedTime) {
 	std::shared_ptr<Entity> player = EntityManager::GetPlayer();
 	if (mIsMovingLeft) {
+		lookingAt = false;
 		mTexture.loadFromFile("Media/Textures/marioLeft.png");
 	}
 	if (mIsMovingRight) {
-			mTexture.loadFromFile("Media/Textures/marioRight.png");
+		lookingAt = true;
+		mTexture.loadFromFile("Media/Textures/marioRight.png");
 	}
-	if (mIsMovingUp) {
+	if (mIsMovingUp && player->m_climbing) {
 		mTexture.loadFromFile("Media/Textures/marioClimb1.png");
 	}
-	
 }
 
 void Game::render()
 {
 	mWindow.clear();
-
-	for (std::shared_ptr<Entity> entity : EntityManager::m_Entities)
-	{
-		if (entity->m_enabled == false)
-		{
-			continue;
-		}
-
-		mWindow.draw(entity->m_sprite);
-	}
-
-	mWindow.draw(mStatisticsText);
-	mWindow.draw(mGameText);
 	mWindow.draw(mGameTime);
 	mWindow.draw(mGameRecord);
+	if (!gameIsEnded) {
+		for (std::shared_ptr<Entity> entity : EntityManager::m_Entities)
+		{
+			if (entity->m_enabled == false)
+			{
+				continue;
+			}
+
+			mWindow.draw(entity->m_sprite);
+		}
+		mWindow.draw(mStatisticsText);
+		mWindow.draw(mGameText);
+		mWindow.draw(mGameCommand);
+	}
+	else {
+		mWindow.draw(mGameEnd);
+		mWindow.draw(mGameEndSub);
+	}
 	mWindow.display();
 }
 
@@ -395,18 +663,15 @@ void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed)
 	} else if (key == sf::Keyboard::Right) {
 		mIsMovingRight = isPressed;
 	}
+	if (key == sf::Keyboard::E && mIsShooting == false) {
+		mIsShooting = isPressed;
+	}
 
 	if (key == sf::Keyboard::Space)
 	{
 		if (isPressed == false) {
-			if (player->m_enabled != false) {
-				if (player->m_jumping == false) {
-					player->velocityY += 1200.f;
-					player->m_jumping = true;
-				}
-			}
-
-			//printf("jump: %d", player->m_jumping);			
+			player->m_jumping = true;
+			player->initial_y = player->m_sprite.getPosition().y;		
 		}
 	}
 }

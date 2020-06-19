@@ -4,7 +4,12 @@ enum EntityType
 {
 	player,
 	block,
-	echelle
+	echelle,
+	peach,
+	DK,
+	enemy,
+	heart,
+	banana
 };
 
 class Entity
@@ -26,6 +31,8 @@ public:
 
 	// Player only
 	bool m_jumping = false;
+	bool complete_jump = false;
+	float initial_y;
 	float velocityY = 0.f;
 	bool m_climbing = false;
 	bool m_lastMove = true;
